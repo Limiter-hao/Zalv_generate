@@ -1,7 +1,7 @@
 *&---------------------------------------------------------------------*
-*& Report ZGIT_ALV_COPY
+*& Report ZGIT_ALV_generate
 *&---------------------------------------------------------------------*
-*&author:limiter
+*& ALV 生成器 author:Limiter
 *&---------------------------------------------------------------------*
 REPORT zgit_alv_generate.
 
@@ -17,6 +17,7 @@ DATA: gs_source TYPE string.
 DATA: gt_source LIKE STANDARD TABLE OF gs_source.
 
 gs_config-status = abap_true.
+gs_config-zif_monitor = abap_true.
 
 DATA:BEGIN OF gs_mode,
 
@@ -58,15 +59,16 @@ ENDCLASS.
 CLASS se38 IMPLEMENTATION.
 
   METHOD set_main.
+
     DATA lv_source TYPE string.
 
     me->set_source( '***********************************************************************' ).
     me->set_source( '* Title           :' && gs_config-title ).
-    me->set_source( '* Application     : &&' ).
+    me->set_source( '* Application     : MM' ).
     me->set_source( '* Subject         : &&' ).
     me->set_source( '* Requested by    : &&' ).
-    me->set_source( '* Execution       : &&' ).
-    me->set_source( '* Ref no:         : &&' ).
+    me->set_source( '* Execution       : Online when required' ).
+    me->set_source( '* Ref no:         : JJY-FS-DS-032' ).
     me->set_source( '* Author          :' && sy-uname ).
     me->set_source( '* Req Date        :' && sy-datum ).
     me->set_source( '***********************************************************************' ).
@@ -107,7 +109,7 @@ CLASS se38 IMPLEMENTATION.
     ENDIF.
     CLEAR lv_alv_name.
 
-    IF gs_config-tree = abap_true.
+    IF gs_config-tree = 'X'.
       me->set_source( '"alv_tree 定义' ).
       me->set_source( 'DATA gcl_tree TYPE REF TO cl_gui_alv_tree.' ).
     ENDIF.
@@ -117,12 +119,10 @@ CLASS se38 IMPLEMENTATION.
     me->set_source( '"alv模式' ).
     me->set_source( 'DATA(gcl_alv_mode) = NEW zcl_alv_mode( sy-repid ).' ).
 
-    IF gs_config-zif_monitor = abap_true.
-      me->set_source( '"监控类' ).
-      me->set_source( 'DATA(gcl_monitor) = NEW zcl_report_monitor( sy-repid ).' ).
-      me->set_source( 'PARAMETERS p_debug TYPE abap_bool NO-DISPLAY. "调式标记，请勿删除').
-      me->space( ).
-    ENDIF.
+    me->set_source( '"监控类' ).
+    me->set_source( 'DATA(gcl_monitor) = NEW zcl_report_monitor( sy-repid ).' ).
+    me->set_source( 'PARAMETERS p_debug TYPE abap_bool NO-DISPLAY. "调式标记，请勿删除').
+    me->space( ).
 
     me->set_source( '*---------------全局ALV内表定义------------------------------------' ).
 
@@ -150,7 +150,6 @@ CLASS se38 IMPLEMENTATION.
         IF sy-subrc = 0.
 
           lv_tabnam = gs_mode-tabnam.
-          TRANSLATE lv_tabnam TO LOWER CASE.
           lv_strnam = lv_tabnam.
           lv_strnam+1(1) = 'S'.
 
@@ -163,7 +162,7 @@ CLASS se38 IMPLEMENTATION.
         me->set_source( '"内表' && sy-index ).
         CONCATENATE 'DATA:BEGIN OF' lv_strnam '.' INTO lv_source SEPARATED BY space.
         me->set_source( lv_source ).
-        me->set_source( '"->在此添加自定义字段' ).
+        me->set_source( '"在此添加内表字段' ).
         me->set_source( '       INCLUDE TYPE zsgit_alv.' ).
         CONCATENATE '     DATA: END OF ' lv_strnam ',' INTO lv_source SEPARATED BY space.
         me->set_source( lv_source ).
@@ -177,7 +176,8 @@ CLASS se38 IMPLEMENTATION.
       ENDDO.
     ENDIF.
 
-    IF gs_config-tree = abap_true.
+    IF gs_config-tree = 'X'.
+
       me->set_source( '"alv tree 的内表，切必须为空' ).
       me->set_source('DATA gt_tree LIKE gt_data1.').
       me->set_source( 'CLEAR gt_tree.').
@@ -203,16 +203,14 @@ CLASS se38 IMPLEMENTATION.
     me->space( ).
 
     me->set_source('"Defin class 大部分通用类').
-    TRANSLATE gs_config-name TO LOWER CASE.
+
     lv_source = gs_config-name && '_cls_define.'.
     CONCATENATE 'INCLUDE' lv_source INTO lv_source SEPARATED BY space.
     me->set_source( lv_source ).
-
     IF gs_config-tree = 'X'.
       me->set_source('"Alv_Tree 的类实现与定义').
       me->set_source('INCLUDE zdemo_hgy_alv4_tree.').
     ENDIF.
-
     me->set_source('"Alv_gird与Gcl_event_receiver的类以及其他类的实现').
     lv_source = gs_config-name && '_cls_impl.'.
     CONCATENATE 'INCLUDE' lv_source INTO lv_source SEPARATED BY space.
@@ -236,9 +234,11 @@ CLASS se38 IMPLEMENTATION.
     me->set_source( '  "设置标题为tcode标题' ).
     me->set_source( '  SELECT SINGLE ttext FROM tstct INTO @gv_ttext' ).
     me->set_source( '    WHERE tcode = @sy-tcode.' ).
-    me->space( ).
 
-    me->set_source( '  SET TITLEBAR' && |'TITLE'| &&'WITH gv_ttext.'  ).
+    CONCATENATE '''' 'TITLE' '''' INTO lv_source .
+    CONCATENATE '  SET TITLEBAR' lv_source 'WITH gv_ttext.' INTO lv_source SEPARATED BY space.
+
+    me->set_source( lv_source ).
     me->set_source( 'AT SELECTION-SCREEN OUTPUT.  "Pbo' ).
     me->space( ).
 
@@ -247,9 +247,8 @@ CLASS se38 IMPLEMENTATION.
 
     me->set_source( 'START-OF-SELECTION.  "Start' ).
     me->space( ).
-    IF gs_config-zif_monitor = abap_true.
-      me->set_source( 'gcl_monitor->start( p_debug ).' ).
-    ENDIF.
+    me->set_source( 'gcl_monitor->start( p_debug ).' ).
+
     CONCATENATE 'gcl_alv_mode->mode =' gs_config-mode '.' INTO lv_source SEPARATED BY space.
     me->set_source( lv_source ).
     me->space( ).
@@ -296,11 +295,9 @@ CLASS se38 IMPLEMENTATION.
 
     me->set_source( 'END-OF-SELECTION.    "End' ).
     me->space( ).
-    IF gs_config-zif_monitor = abap_true.
-      me->set_source( 'gcl_monitor->end( ).' ).
-      me->set_source( 'FREE gcl_monitor.' ).
-    ENDIF.
-    me->set_source( '  CHECK gcl_msg->handle_msg NE abap_true.' ).
+    me->set_source( 'gcl_monitor->end( ).' ).
+    me->set_source( 'FREE gcl_monitor.' ).
+    me->set_source( '  CHECK gcl_msg->zif_msg~handle_msg NE abap_true.' ).
     me->set_source( '  FREE lcl_data.' ).
     me->set_source( '  CALL SCREEN 100.' ).
 
@@ -559,8 +556,6 @@ MODULE status_0100 OUTPUT.
   to_line = '200'
   protect_mode = 1
   enable_editing_protected_text = 1 ).
-
-* SET TITLEBAR 'xxx'.
 ENDMODULE.
 *&---------------------------------------------------------------------*
 *&      Module  USER_COMMAND_0100  INPUT
@@ -654,8 +649,10 @@ MODULE user_command_0100_1 INPUT.
     WHEN 'EXEC'.
 
       IF gs_config-nm = '1' AND gs_config-tree = 'X'.
+
         MESSAGE '单一ALV不允许开启tree接口' TYPE 'I' DISPLAY LIKE 'E'.
         RETURN.
+
       ENDIF.
 
       "检查程序是否已经存在
@@ -669,13 +666,17 @@ MODULE user_command_0100_1 INPUT.
         IF sy-subrc = 0.
 
         ENDIF.
+
       ENDIF.
 
       IF sy-subrc <> 0.
 
+
       ELSE.
+
         MESSAGE '程序已存在，不允许再次生成' TYPE 'I' DISPLAY LIKE 'E'.
         RETURN.
+
       ENDIF.
 
       DATA(se38) = NEW se38( ).
@@ -757,9 +758,7 @@ ENDMODULE.
 MODULE get_ziflog INPUT.
 
   IF gs_config-ziflog IS NOT INITIAL.
-
     MESSAGE '请不要忘记到tcod:SLG0中创建日志对象' TYPE 'I' DISPLAY LIKE 'E'.
-
   ENDIF.
 
 ENDMODULE.

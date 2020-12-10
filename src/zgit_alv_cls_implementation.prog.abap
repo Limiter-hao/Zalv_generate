@@ -219,10 +219,10 @@ CLASS gcl_alv_display IMPLEMENTATION."alv展示类
                              data = <ft_data> ).
     ENDDO.
 
-*    "如果tree标记打X 的话，启用tree功能
-*    IF gv_tree = abap_true.
-*      NEW tree( )->construct( ).
-*    ENDIF.
+   "如果tree标记打X 的话，启用tree功能
+*   IF gv_tree = abap_true.
+*     NEW tree( )->construct( ).
+*   ENDIF.
 
   ENDMETHOD.
 

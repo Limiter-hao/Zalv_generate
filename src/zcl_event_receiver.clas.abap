@@ -328,7 +328,7 @@ CLASS ZCL_EVENT_RECEIVER IMPLEMENTATION.
 *        DATA lt_filter TYPE lvc_t_filt.
 *        lt_filter = VALUE #( ( fieldname = 'VBELN' sign = 'I' option = 'EQ'  low = <fs_vbeln> ) ).
 *        gcl_alv2->set_filter_criteria( lt_filter ).
-*        zcl_alv_refresh=>refresh(  gcl_alv2 ).
+*        zcl_alv_refresh=>do(  gcl_alv2 ).
 
 *      WHEN '2'.
 *

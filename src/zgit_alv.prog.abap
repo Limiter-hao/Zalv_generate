@@ -23,6 +23,9 @@ DATA gcl_tree TYPE REF TO cl_gui_alv_tree.
 DATA(gcl_msg) = NEW zcl_msg( ).
 "alv模式
 DATA(gcl_alv_mode) = NEW zcl_alv_mode( sy-repid ).
+"监控类
+DATA(gcl_monitor) = NEW zcl_report_monitor( sy-repid ).
+PARAMETERS p_debug TYPE abap_bool NO-DISPLAY. "调式标记，请勿删除
 *---------------全局ALV内表定义-------------------------------
 
 DATA:BEGIN OF gs_data.
@@ -109,13 +112,14 @@ START-OF-SELECTION.
 
   SET HANDLER gcl_msg->display_msg FOR ALL INSTANCES.
   "取数
-
+  gcl_monitor->start( p_debug ).
   DATA(lcl_data) = NEW gcl_data( ).
 
   lcl_data->main( ).
 
 END-OF-SELECTION.
-
+  gcl_monitor->end( ).
+  FREE gcl_monitor.
   CHECK gcl_msg->handle_msg NE abap_true.
   FREE lcl_data.
   CALL SCREEN 100.
